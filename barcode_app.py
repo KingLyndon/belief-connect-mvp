@@ -3,147 +3,271 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 from matplotlib.figure import Figure
 import numpy as np
-from dataclasses import dataclass
-from typing import List, Dict, Tuple
+import bcrypt
+import pandas as pd
+from datetime import datetime, timedelta
 from supabase import create_client
+import io
 import urllib.parse
 
 # ============================================================================
-# DATABASE CONNECTION (Supabase)
+# 1. CORE CONFIGURATION & STYLING
 # ============================================================================
 URL = "https://rinbuwveuurjrzqijiai.supabase.co"
 KEY = "sb_publishable_rcamFVqYmdrLgnKtq_Or2Q_ojNXBJTg"
 supabase = create_client(URL, KEY)
 
-def save_user_data(name, responses, clan_name):
-    response_list = [responses[i] for i in sorted(responses.keys())]
-    data = {"username": name, "responses": response_list, "clan_name": clan_name}
-    try:
-        supabase.table("profiles").insert(data).execute()
-        return True
-    except Exception as e:
-        st.error(f"Database Error: {e}")
-        return False
+def apply_futuristic_theme():
+    st.markdown(f"""
+        <style>
+        /* Base Theme */
+        .stApp {{
+            background-color: #000000;
+            color: #FFFFFF;
+            font-family: 'Inter', sans-serif;
+        }}
+        
+        /* Branding Section */
+        .logo-text {{
+            font-family: 'Orbitron', sans-serif;
+            font-size: 80px;
+            font-weight: 900;
+            background: -webkit-linear-gradient(#FFFFFF, #FF2D55);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 15px;
+            text-align: center;
+            margin-bottom: 0px;
+        }}
+        
+        .tagline {{
+            color: #FF2D55;
+            text-align: center;
+            letter-spacing: 3px;
+            font-size: 12px;
+            text-transform: uppercase;
+            margin-top: -20px;
+            margin-bottom: 40px;
+        }}
+
+        /* Futuristic Cards */
+        .glass-card {{
+            background: rgba(255, 45, 85, 0.05);
+            border: 1px solid rgba(255, 45, 85, 0.2);
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 20px;
+        }}
+
+        /* Inputs and Buttons */
+        .stTextInput>div>div>input {{
+            background-color: #000000;
+            color: white;
+            border: 1px solid #333;
+            border-radius: 10px;
+        }}
+        
+        .stButton>button {{
+            background-color: transparent;
+            color: #FF2D55;
+            border: 1px solid #FF2D55;
+            border-radius: 50px;
+            height: 3.5em;
+            transition: all 0.3s ease;
+            width: 100%;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-size: 14px;
+        }}
+        
+        .stButton>button:hover {{
+            background-color: #FF2D55;
+            color: white;
+            box-shadow: 0 0 20px rgba(255, 45, 85, 0.4);
+        }}
+        
+        /* Sidebar Styling */
+        [data-testid="stSidebar"] {{
+            background-color: #050505;
+            border-right: 1px solid #222;
+        }}
+        
+        .share-btn {{
+            text-decoration: none;
+            color: white;
+            background: #FF2D55;
+            padding: 12px;
+            border-radius: 10px;
+            display: block;
+            text-align: center;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }}
+        </style>
+    """, unsafe_allow_html=True)
 
 # ============================================================================
-# DATA MODELS & CONFIG
+# 2. SECURITY & DATA UTILS
 # ============================================================================
+def hash_pw(password):
+    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
-@dataclass
-class Question:
-    id: int; text: str; trait: str; color_name: str; hex_color: str; intensity: str
+def check_pw(password, hashed):
+    return bcrypt.checkpw(password.encode('utf-8'), hashed.encode('utf-8'))
 
+# 40 Questions Engine
 QUESTIONS = [
-    Question(id=1, text="Individual freedom should always take precedence over collective security.", trait="Liberty vs Security", color_name="Purple", hex_color="#9333EA", intensity="high"),
-    Question(id=2, text="I would rather be the leader of a small, struggling team than a member of a large, successful one.", trait="Ambition", color_name="Red", hex_color="#DC2626", intensity="high"),
-    Question(id=3, text="I find more comfort in the unknown than in the familiar.", trait="Openness to Change", color_name="Green", hex_color="#16A34A", intensity="medium"),
-    Question(id=4, text="In a crisis, the most practical solution is always better than the one that preserves people's feelings.", trait="Rationality", color_name="Blue", hex_color="#2563EB", intensity="medium"),
-    Question(id=5, text="I would prefer a guaranteed $50k/year over a 50% chance at $500k/year.", trait="Stability vs Risk", color_name="Orange", hex_color="#EA580C", intensity="high"),
-    Question(id=6, text="Tradition provides a necessary roadmap that modern society should follow more closely.", trait="Altruism/Community", color_name="Purple", hex_color="#9333EA", intensity="medium"),
-    Question(id=7, text="A successful life is defined by the tangible legacy or work one leaves behind.", trait="Ambition", color_name="Red", hex_color="#DC2626", intensity="medium"),
-    Question(id=8, text="I enjoy discussing abstract theories even if they have no practical application.", trait="Openness to Ideas", color_name="Green", hex_color="#16A34A", intensity="low"),
-    Question(id=9, text="When making big life decisions, I trust my 'gut feeling' more than a list of pros and cons.", trait="Rationality", color_name="Blue", hex_color="#2563EB", intensity="low"),
-    Question(id=10, text="I find a strict daily routine suffocating rather than helpful.", trait="Stability", color_name="Orange", hex_color="#EA580C", intensity="medium"),
+    {"id": 1, "text": "Absolute freedom is more valuable than communal harmony.", "trait": "Liberty", "color": "#FF2D55"},
+    {"id": 2, "text": "I value high-stakes leadership over comfortable cooperation.", "trait": "Ambition", "color": "#FF79C6"},
+    {"id": 3, "text": "The unknown is a playground, not a threat.", "trait": "Change", "color": "#BD93F9"},
+    {"id": 4, "text": "Logic must prevail even when it hurts.", "trait": "Rationality", "color": "#8BE9FD"},
+    {"id": 5, "text": "Stability is a cage, not a foundation.", "trait": "Stability", "color": "#50FA7B"},
+    # ... Imagine 35 more questions here following this traits/color logic
 ]
-
-MOCK_USERS = [
-    {"name": "Alex Rivera", "res": {1:4, 2:5, 3:4, 4:4, 5:2, 6:2, 7:5, 8:4, 9:2, 10:4}},
-    {"name": "Sam Chen", "res": {1:5, 2:4, 3:5, 4:3, 5:2, 6:2, 7:4, 8:5, 9:3, 10:5}},
-    {"name": "Jordan Taylor", "res": {1:3, 2:3, 3:3, 4:4, 5:4, 6:3, 7:3, 8:3, 9:2, 10:2}},
-]
-
-ANSWER_OPTIONS = {1: "Strongly Disagree", 2: "Disagree", 3: "Neutral", 4: "Agree", 5: "Strongly Agree"}
+# Fill remaining 35 questions programmatically for MVP
+for i in range(6, 41):
+    QUESTIONS.append({"id": i, "text": f"Deeper psychometric insight regarding {QUESTIONS[i%5]['trait']} #{i}", "trait": QUESTIONS[i%5]['trait'], "color": QUESTIONS[i%5]['color']})
 
 # ============================================================================
-# CORE LOGIC
+# 3. VISUALIZATION: THE VERTICAL BLUPR
 # ============================================================================
-
-def calculate_saturation(answer, intensity):
-    ext = abs(answer - 3) / 2
-    base = {'high': 0.5, 'medium': 0.6, 'low': 0.7}.get(intensity, 0.6)
-    return base + (ext * (1 - base))
-
-def hex_to_rgb(hex_c, sat):
-    hex_c = hex_c.lstrip('#')
-    r, g, b = [int(hex_c[i:i+2], 16)/255 for i in (0, 2, 4)]
-    gray = (r + g + b) / 3
-    return (gray + sat * (r - gray), gray + sat * (g - gray), gray + sat * (b - gray))
-
-def generate_barcode(responses):
-    fig = Figure(figsize=(12, 2), facecolor='#0a0a0a')
-    ax = fig.add_subplot(111); ax.set_xlim(0, 10); ax.set_ylim(0, 1); ax.axis('off')
-    for i, q in enumerate(QUESTIONS):
-        if q.id in responses:
-            color = hex_to_rgb(q.hex_color, calculate_saturation(responses[q.id], q.intensity))
-            ax.add_patch(mpatches.Rectangle((i, 0), 1, 1, facecolor=color))
+def generate_vertical_blupr(responses_df):
+    # Fixed vertical aspect ratio for Story sharing (9:16)
+    fig = Figure(figsize=(5, 8.8), facecolor='#000000')
+    ax = fig.add_subplot(111)
+    ax.set_ylim(0, len(responses_df))
+    ax.set_xlim(0, 1)
+    ax.axis('off')
+    
+    for i, row in responses_df.iterrows():
+        q_data = next((q for q in QUESTIONS if q["id"] == row['question_id']), {"color": "#FF2D55"})
+        # Intensity logic for Peaceful/Futuristic Pink tones
+        sat = 0.4 + (abs(row['score'] - 3) / 2) * 0.6
+        hex_c = q_data['color'].lstrip('#')
+        r, g, b = [int(hex_c[j:j+2], 16)/255 for j in (0, 2, 4)]
+        gray = (r + g + b) / 3
+        color = (gray + sat * (r - gray), gray + sat * (g - gray), gray + sat * (b - gray))
+        
+        ax.add_patch(mpatches.Rectangle((0, i), 1, 1, facecolor=color))
     return fig
 
-def get_similarity(v1, v2):
-    return (1 - (np.sqrt(sum((a - b) ** 2 for a, b in zip(v1, v2))) / np.sqrt(10))) * 100
-
 # ============================================================================
-# UI COMPONENTS
+# 4. APP STAGES
 # ============================================================================
-
 def main():
-    st.set_page_config(page_title="BluPr", page_icon="🧬", layout="centered")
-    st.markdown("<style>.stApp { background-color: #0a0a0a; color: #ffffff; } .stButton>button { width: 100%; border-radius: 8px; font-weight: 600; }</style>", unsafe_allow_html=True)
+    apply_futuristic_theme()
     
-    if 'responses' not in st.session_state: st.session_state.responses = {}
-    if 'survey_completed' not in st.session_state: st.session_state.survey_completed = False
-    if 'current_question' not in st.session_state: st.session_state.current_question = 0
-    if 'saved' not in st.session_state: st.session_state.saved = False
-
-    st.title("🧬 BluPr")
-    st.markdown("*Your Belief Blueprint.*")
-    
-    if not st.session_state.survey_completed:
-        render_survey()
+    if 'user' not in st.session_state:
+        show_auth()
     else:
-        render_results()
+        # Check if onboarding (initial 10) is complete
+        ans = supabase.table("daily_responses").select("*").eq("user_email", st.session_state.user['email']).execute()
+        ans_df = pd.DataFrame(ans.data)
+        
+        if len(ans_df) < 10:
+            show_onboarding(ans_df)
+        else:
+            show_dashboard(ans_df)
 
-def render_survey():
-    q = QUESTIONS[st.session_state.current_question]
-    st.progress((len(st.session_state.responses) / 10))
-    st.markdown(f"### {q.text}")
-    ans = st.radio("Response:", list(ANSWER_OPTIONS.keys()), format_func=lambda x: ANSWER_OPTIONS[x], key=f"q_{q.id}")
-    st.session_state.responses[q.id] = ans
+def show_auth():
+    st.markdown('<p class="logo-text">BluPr</p>', unsafe_allow_html=True)
+    st.markdown('<p class="tagline">The Blueprint of your Mind</p>', unsafe_allow_html=True)
     
-    c1, _, c3 = st.columns([1,1,1])
-    if st.session_state.current_question > 0:
-        if c1.button("← Back"): st.session_state.current_question -= 1; st.rerun()
-    if st.session_state.current_question < 9:
-        if c3.button("Next →"): st.session_state.current_question += 1; st.rerun()
-    else:
-        name = st.text_input("Name for your BluPr:")
-        if c3.button("Generate") and name:
-            st.session_state.user_name = name; st.session_state.survey_completed = True; st.rerun()
+    tab1, tab2 = st.tabs(["EXISTING USER", "NEW IDENTITY"])
+    
+    with tab1:
+        email = st.text_input("Email", key="l_email")
+        pw = st.text_input("Password", type="password", key="l_pw")
+        if st.button("Access BluPr"):
+            user = supabase.table("users").select("*").eq("email", email).execute()
+            if user.data and check_pw(pw, user.data[0]['password_hash']):
+                st.session_state.user = user.data[0]
+                st.rerun()
+            else: st.error("Blueprint match failed.")
 
-def render_results():
-    st.markdown(f"## {st.session_state.user_name}'s BluPr")
-    st.pyplot(generate_barcode(st.session_state.responses))
-    
-    if not st.session_state.saved:
-        save_user_data(st.session_state.user_name, st.session_state.responses, "The Vanguard")
-        st.session_state.saved = True
-        st.toast("BluPr saved! 🚀")
+    with tab2:
+        name = st.text_input("Display Name", key="s_name")
+        email = st.text_input("Email ID", key="s_email")
+        pw = st.text_input("Secret Password", type="password", key="s_pw")
+        if st.button("Commence"):
+            h_pw = hash_pw(pw)
+            try:
+                supabase.table("users").insert({"email": email, "password_hash": h_pw, "display_name": name, "clan_name": "Neutral"}).execute()
+                st.success("Identity established. Please Login.")
+            except: st.error("Identity already exists.")
 
-    st.divider()
+def show_onboarding(ans_df):
+    q_idx = len(ans_df)
+    q = QUESTIONS[q_idx]
+    st.markdown(f"### INITIALIZATION PHASE {q_idx + 1}")
+    st.progress((q_idx + 1) / 10)
     
-    # --- NEW: SHARE SECTION ---
-    st.markdown("### 📢 Share your BluPr")
-    share_text = f"I just generated my belief blueprint on BluPr! My thinking is unique. Generate yours here: {st.query_params.get('app_url', 'https://blupr.streamlit.app')}"
-    encoded_text = urllib.parse.quote(share_text)
+    st.markdown(f"## {q['text']}")
+    score = st.select_slider("Intensity", options=[1,2,3,4,5], value=3)
     
-    col1, col2 = st.columns(2)
-    with col1:
-        st.markdown(f'''<a href="https://wa.me/?text={encoded_text}" target="_blank"><button style="width:100%; border-radius:8px; padding:10px; background-color:#25D366; color:white; border:none; cursor:pointer; font-weight:bold;">Share on WhatsApp</button></a>''', unsafe_allow_html=True)
-    with col2:
-        st.markdown(f'''<a href="https://twitter.com/intent/tweet?text={encoded_text}" target="_blank"><button style="width:100%; border-radius:8px; padding:10px; background-color:#1DA1F2; color:white; border:none; cursor:pointer; font-weight:bold;">Share on X</button></a>''', unsafe_allow_html=True)
-    
-    st.divider()
-    if st.button("Start New BluPr"):
-        st.session_state.responses = {}; st.session_state.survey_completed = False; st.session_state.current_question = 0; st.session_state.saved = False; st.rerun()
+    if st.button("SYNC"):
+        supabase.table("daily_responses").insert({"user_email": st.session_state.user['email'], "question_id": q['id'], "score": score}).execute()
+        st.rerun()
+
+def show_dashboard(ans_df):
+    user = st.session_state.user
+    st.sidebar.markdown(f"<h1 style='color:#FF2D55;'>BluPr</h1>", unsafe_allow_html=True)
+    nav = st.sidebar.radio("CHAMBER", ["Identity", "Clan Hub", "Twin Chamber"])
+
+    if nav == "Identity":
+        st.markdown(f"### Welcome back, {user['display_name']}")
+        
+        # Check for Daily Pulse (3 Qs)
+        today = datetime.now().date()
+        todays_ans = ans_df[pd.to_datetime(ans_df['answered_at']).dt.date == today]
+        
+        if len(todays_ans) < 3:
+            st.markdown('<div class="glass-card"><h4>DAILY PULSE</h4>', unsafe_allow_html=True)
+            q_idx = len(ans_df)
+            q = QUESTIONS[q_idx]
+            st.write(q['text'])
+            score = st.slider("Response", 1, 5, 3)
+            if st.button("PULSE CHECK"):
+                supabase.table("daily_responses").insert({"user_email": user['email'], "question_id": q['id'], "score": score}).execute()
+                st.rerun()
+            st.markdown('</div>', unsafe_allow_html=True)
+        
+        # Display Vertical Barcode
+        fig = generate_vertical_blupr(ans_df)
+        st.pyplot(fig)
+        
+        buf = io.BytesIO()
+        fig.savefig(buf, format="png", bbox_inches='tight', pad_inches=0, transparent=False)
+        st.download_button("DOWNLOAD STORY IMAGE", buf.getvalue(), "my_blupr.png", "image/png")
+
+    elif nav == "Clan Hub":
+        st.header(f"CLAN: VANGUARD")
+        tab1, tab2 = st.tabs(["The Wall", "Shared Recs"])
+        
+        with tab1:
+            st.markdown('<div class="glass-card"><b>Wall Poll:</b> Should the Clan move toward a decentralised leadership?</div>', unsafe_allow_html=True)
+            st.button("AGREE")
+            st.button("DISAGREE")
+            
+        with tab2:
+            st.write("Top Affinity for your Clan:")
+            col1, col2 = st.columns(2)
+            with col1: st.button("👍 Movie: Ex Machina")
+            with col2: st.button("👍 Book: Zero to One")
+
+    elif nav == "Twin Chamber":
+        st.header("TWIN SYNC")
+        # Similarity Math (Euclidean Distance on last 10)
+        st.markdown('<div class="glass-card">Searching for 90%+ Blueprint similarities...</div>', unsafe_allow_html=True)
+        
+        # Simulated Twin
+        st.markdown(f"""
+            <div style="padding:15px; border-left: 2px solid #FF2D55; background: #111;">
+                <b>Twin: Riley</b> | 92.4% Match<br>
+                <span style="color:#FF2D55;">⚠️ Losing connection in 2d 14h 32m</span>
+            </div>
+        """, unsafe_allow_html=True)
+        st.text_input("Send Sync Message...")
 
 if __name__ == "__main__":
     main()
