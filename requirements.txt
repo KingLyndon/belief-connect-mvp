@@ -2,3 +2,5 @@ streamlit
 matplotlib
 supabase
 numpy
+bcrypt
+pandas
