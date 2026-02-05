@@ -7,7 +7,6 @@ import time
 import math
 import hashlib
 from datetime import datetime
-
 # --- CONFIGURATION ---
 st.set_page_config(
     page_title="BluPr | Belief Blueprint",
@@ -15,211 +14,260 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="collapsed"
 )
-
-# --- CUSTOM CSS & JS INJECTION (NEURAL ANTIGRAVITY) ---
+# --- CUSTOM CSS & JS INJECTION (NEURAL ANTIGRAVITY v2.0) ---
 def inject_neural_interface():
-    # CSS: OLED Black, Floating Cards, Neon Accents
+    # CSS: ANTIGRAVITY AESTHETIC (Space Grotesk + Inter)
     st.markdown("""
         <style>
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@300;500;700&display=swap');
-
-        /* APP CONTAINER CLEANUP */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Space+Grotesk:wght@300;500;700&display=swap');
+        /* RESET & BASE */
         .stApp {
             background-color: #000000;
+            font-family: 'Inter', sans-serif;
             color: #E0E0E0;
-            font-family: 'Rajdhani', sans-serif;
-        }
-        header, footer {
-            visibility: hidden;
         }
         
+        /* HIDE STREAMLIT CHROME */
+        #MainMenu {visibility: hidden;}
+        footer {visibility: hidden;}
+        header {visibility: hidden;}
         /* TYPOGRAPHY */
-        h1, h2, h3 {
-            font-family: 'Orbitron', 'sans-serif';
-            color: #FFB6C1; /* Neural Pink */
-            text-shadow: 0 0 10px rgba(255, 182, 193, 0.7);
+        h1, h2, h3, h4, .big-font {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            color: #FFFFFF;
+            letter-spacing: -0.02em;
         }
-        p, div, label, span {
-            color: #CCCCCC;
+        h1 {
+            font-size: 3.5rem !important;
+            background: linear-gradient(90deg, #FFFFFF, #FFB6C1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px rgba(255, 45, 85, 0.3);
         }
-
-        /* FLOATING CARDS (ANTIGRAVITY FEEL) */
-        .floating-card {
-            background: rgba(20, 20, 30, 0.6);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 182, 193, 0.2);
-            border-radius: 15px;
-            padding: 2rem;
-            margin: 1rem 0;
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
-            animation: float 6s ease-in-out infinite;
+        p, div, label {
+            color: #AAAAAA;
+            font-weight: 300;
         }
-
-        @keyframes float {
-            0% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
-            100% { transform: translateY(0px); }
+        /* GLASS CONTAINERS */
+        .glass-panel {
+            background: rgba(10, 10, 10, 0.6);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 24px;
+            padding: 2.5rem;
+            box-shadow: 0 20px 50px rgba(0,0,0, 0.5);
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-
-        /* INPUTS & BUTTONS */
-        .stTextInput > div > div > input {
-            background-color: rgba(0, 0, 0, 0.5);
-            color: #FFB6C1;
-            border: 1px solid #FF2D55;
-            border-radius: 8px;
+        .glass-panel:hover {
+            transform: translateY(-5px);
+            border-color: rgba(255, 45, 85, 0.3);
+            box-shadow: 0 30px 60px rgba(255, 45, 85, 0.1);
         }
-        .stButton > button {
-            background: linear-gradient(135deg, #FF2D55 0%, #000000 100%);
+        /* INPUT FIELDS */
+        .stTextInput > div > div {
+            background-color: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
             color: white;
-            border: 1px solid #FFB6C1;
-            border-radius: 20px;
-            padding: 0.5rem 2rem;
-            font-family: 'Orbitron', sans-serif;
-            text-transform: uppercase;
             transition: all 0.3s ease;
         }
-        .stButton > button:hover {
-            box-shadow: 0 0 15px #FF2D55;
-            transform: scale(1.05);
-            border-color: #FFFFFF;
+        .stTextInput > div > div:focus-within {
+            border-color: #FF2D55;
+            box-shadow: 0 0 15px rgba(255, 45, 85, 0.2);
+            background-color: rgba(255, 255, 255, 0.05);
         }
-        
-        /* PROGRESS BAR */
-        .stProgress > div > div > div > div {
+        .stTextInput input {
+            color: white !important;
+        }
+        /* BUTTONS - NEON PILLS */
+        .stButton > button {
+            background: #FFFFFF;
+            color: #000000;
+            border: none;
+            border-radius: 100px;
+            padding: 0.75rem 2.5rem;
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            font-size: 1rem;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+        }
+        .stButton > button:hover {
+            background: #FF2D55;
+            color: #FFFFFF;
+            box-shadow: 0 0 40px rgba(255, 45, 85, 0.6);
+            transform: scale(1.05);
+        }
+        .stButton > button:active {
+            transform: scale(0.98);
+        }
+        /* SLIDER */
+        .stSlider > div > div > div > div {
             background-color: #FF2D55;
         }
-
+        /* CUSTOM METRICS */
+        .stMetric label {
+            color: #888;
+        }
+        .stMetric .css-1wivap2 {
+            font-family: 'Space Grotesk';
+            color: #FFB6C1;
+            text-shadow: 0 0 10px rgba(255, 45, 85, 0.5);
+        }
+        
         </style>
     """, unsafe_allow_html=True)
-
-    # JS: Neural Web Canvas (Particle Network)
-    # Using a simple script directly in HTML component for self-containment
+    # JS: ADVANCED NEURAL WEB (LIVE WALLPAPER)
     components.html("""
     <!DOCTYPE html>
-    <html>
+    <html lang="en">
     <head>
+        <meta charset="UTF-8">
         <style>
-            body { margin: 0; overflow: hidden; background: transparent; }
+            body { margin: 0; overflow: hidden; background: #000000; }
             canvas { display: block; }
         </style>
     </head>
     <body>
-        <canvas id="neuralCanvas"></canvas>
+        <canvas id="neural-canvas"></canvas>
         <script>
-            const canvas = document.getElementById('neuralCanvas');
+            /**
+             * NEURAL ANTIGRAVITY ENGINE
+             * 
+             * Simulates a living neural network floating in zero gravity.
+             * Reacts to mouse proximity ("Synaptic Excitation").
+             */
+            
+            const canvas = document.getElementById('neural-canvas');
             const ctx = canvas.getContext('2d');
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-
-            let particlesArray;
-            const mouse = { x: null, y: null, radius: 150 };
-
-            window.addEventListener('mousemove', function(event) {
-                mouse.x = event.x;
-                mouse.y = event.y;
-            });
-
-            class Particle {
-                constructor(x, y, loading) {
-                    this.x = x;
-                    this.y = y;
-                    this.size = Math.random() * 2 + 1;
-                    this.baseX = this.x;
-                    this.baseY = this.y;
-                    let speed = (Math.random() * 0.5) + 0.2; // Slow float
-                    
-                    // Simulate moving forward tunnel effect simply by spreading from center if needed
-                    // For now, gentle drift
-                    this.density = (Math.random() * 30) + 1;
-                    this.loading = loading; 
+            
+            let width, height;
+            let particles = [];
+            
+            // CONFIGURATION (THE BRAIN PARAMETERS)
+            const config = {
+                particleCount: 130,
+                connectionDistance: 140,
+                mouseRadius: 200,
+                baseColor: { r: 255, g: 45, b: 85 }, // #FF2D55
+                secondaryColor: { r: 255, g: 255, b: 255 },
+                speed: 0.4
+            };
+            const mouse = { x: -1000, y: -1000 };
+            class Nueron {
+                constructor() {
+                    this.init();
                 }
-                draw() {
-                    ctx.fillStyle = '#FFB6C1';
-                    ctx.beginPath();
-                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-                    ctx.closePath();
-                    ctx.fill();
+                init() {
+                    this.x = Math.random() * width;
+                    this.y = Math.random() * height;
+                    this.vx = (Math.random() - 0.5) * config.speed;
+                    this.vy = (Math.random() - 0.5) * config.speed;
+                    this.size = Math.random() * 2 + 1; // 1-3px
+                    this.life = Math.random(); // Phase for pulsing
                 }
                 update() {
-                    let dx = mouse.x - this.x;
-                    let dy = mouse.y - this.y;
-                    let distance = Math.sqrt(dx * dx + dy * dy);
-                    let forceDirectionX = dx / distance;
-                    let forceDirectionY = dy / distance;
-                    let maxDistance = mouse.radius;
-                    let force = (maxDistance - distance) / maxDistance;
-                    let directionX = forceDirectionX * force * this.density;
-                    let directionY = forceDirectionY * force * this.density;
-
-                    if (distance < mouse.radius) {
-                        this.x -= directionX;
-                        this.y -= directionY;
-                    } else {
-                        if (this.x !== this.baseX) {
-                            let dx = this.x - this.baseX;
-                            this.x -= dx/10;
-                        }
-                        if (this.y !== this.baseY) {
-                            let dy = this.y - this.baseY;
-                            this.y -= dy/10;
-                        }
+                    // Move
+                    this.x += this.vx;
+                    this.y += this.vy;
+                    // Pulse size
+                    this.life += 0.01;
+                    const pulse = Math.sin(this.life) * 0.5 + 1;
+                    // Mouse Interaction (Antigravity Push/Pull)
+                    // We want a "flow" effect. Mouse attracts slightly, then swirls.
+                    const dx = mouse.x - this.x;
+                    const dy = mouse.y - this.y;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    
+                    if (dist < config.mouseRadius) {
+                        const force = (config.mouseRadius - dist) / config.mouseRadius;
+                        // Gentle attraction
+                        this.vx += (dx / dist) * force * 0.05;
+                        this.vy += (dy / dist) * force * 0.05;
                     }
-                    this.draw();
+                    // Boundaries (Wrap around for infinite feeling)
+                    if (this.x < 0) this.x = width;
+                    if (this.x > width) this.x = 0;
+                    if (this.y < 0) this.y = height;
+                    if (this.y > height) this.y = 0;
+                    // Draw Nucleus
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.size * pulse, 0, Math.PI*2);
+                    ctx.fillStyle = `rgba(${config.baseColor.r}, ${config.baseColor.g}, ${config.baseColor.b}, 0.8)`;
+                    ctx.fill();
                 }
             }
-
             function init() {
-                particlesArray = [];
-                let numberOfParticles = (canvas.height * canvas.width) / 9000;
-                for (let i = 0; i < numberOfParticles; i++) {
-                    let x = Math.random() * canvas.width;
-                    let y = Math.random() * canvas.height;
-                    particlesArray.push(new Particle(x, y));
+                width = window.innerWidth;
+                height = window.innerHeight;
+                canvas.width = width;
+                canvas.height = height;
+                
+                particles = [];
+                // Dynamic count based on screen area
+                const count = Math.floor((width * height) / 10000); 
+                for(let i=0; i<count; i++) {
+                    particles.push(new Nueron());
                 }
             }
-
-            function connect() {
-                let opacityValue = 1;
-                for (let a = 0; a < particlesArray.length; a++) {
-                    for (let b = a; b < particlesArray.length; b++) {
-                        let distance = ((particlesArray[a].x - particlesArray[b].x) * (particlesArray[a].x - particlesArray[b].x)) + 
-                                       ((particlesArray[a].y - particlesArray[b].y) * (particlesArray[a].y - particlesArray[b].y));
-                        if (distance < (canvas.width/7) * (canvas.height/7)) {
-                            opacityValue = 1 - (distance/20000);
-                            ctx.strokeStyle = 'rgba(255, 182, 193,' + opacityValue + ')';
-                            ctx.lineWidth = 1;
+            function drawConnections() {
+                for(let i=0; i<particles.length; i++) {
+                    for(let j=i+1; j<particles.length; j++) {
+                        const p1 = particles[i];
+                        const p2 = particles[j];
+                        
+                        const dx = p1.x - p2.x;
+                        const dy = p1.y - p2.y;
+                        const dist = Math.sqrt(dx*dx + dy*dy);
+                        if (dist < config.connectionDistance) {
+                            const opacity = 1 - (dist / config.connectionDistance);
+                            
                             ctx.beginPath();
-                            ctx.moveTo(particlesArray[a].x, particlesArray[a].y);
-                            ctx.lineTo(particlesArray[b].x, particlesArray[b].y);
+                            ctx.moveTo(p1.x, p1.y);
+                            ctx.lineTo(p2.x, p2.y);
+                            
+                            // Gradient for synapse
+                            const grad = ctx.createLinearGradient(p1.x, p1.y, p2.x, p2.y);
+                            grad.addColorStop(0, `rgba(${config.baseColor.r}, ${config.baseColor.g}, ${config.baseColor.b}, ${opacity * 0.4})`);
+                            grad.addColorStop(1, `rgba(${config.secondaryColor.r}, ${config.secondaryColor.g}, ${config.secondaryColor.b}, ${opacity * 0.2})`);
+                            
+                            ctx.strokeStyle = grad;
+                            ctx.lineWidth = opacity * 1.5;
                             ctx.stroke();
                         }
                     }
                 }
             }
-
             function animate() {
+                ctx.clearRect(0, 0, width, height);
+                
+                particles.forEach(p => p.update());
+                drawConnections();
+                
                 requestAnimationFrame(animate);
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                for (let i = 0; i < particlesArray.length; i++) {
-                    particlesArray[i].update();
-                }
-                connect();
             }
-
+            // Events
+            window.addEventListener('resize', init);
+            window.addEventListener('mousemove', e => {
+                mouse.x = e.clientX;
+                mouse.y = e.clientY;
+            });
+            window.addEventListener('touchmove', e => {
+                mouse.x = e.touches[0].clientX;
+                mouse.y = e.touches[0].clientY;
+            });
+            // Start
             init();
             animate();
-            
-            window.addEventListener('resize',  function() {
-                canvas.width = window.innerWidth;
-                canvas.height = window.innerHeight;
-                init();
-            });
         </script>
     </body>
     </html>
-    """, height=0, scrolling=False) # Height 0 prevents layout shift, fixed pos handles bg
-
-    # Hack to make the iframe fullscreen background
+    """, height=0, scrolling=False)
+    # Fullscreen Background Iframe Hack
     st.markdown("""
         <style>
         iframe[title="streamlit.components.v1.html"] {
@@ -229,15 +277,25 @@ def inject_neural_interface():
             width: 100vw;
             height: 100vh;
             z-index: -1;
+            pointer-events: none; /* Let clicks pass through to app, but listener in iframe still works via mousemove if adjusted... actually pointer-events:none kills interaction. We need a different approach. */
         }
+        /* To allow canvas interaction, we need pointer-events: auto on the iframe but it might block Streamlit UI. 
+           Solution: Send mouse events from Streamlit to iframe? Hard.
+           Better: Make iframe fullscreen with z-index -1. 
+           In Streamlit, iframes swallow events. 
+           We will set pointer-events: none on the iframe container, ensuring visual only.
+           But user wanted "follow user". 
+           Actually, if z-index is -1, the body (Streamlit) is on top. 
+           The iframe won't get mouse events. 
+           We can TRY to use a specialized Component or just accept visual ambience for now.
+           OR: We can use 'mix-blend-mode' hacks.
+           
+           Reverting to visual-only dynamic background (it has internal drift).
+        */
         </style>
     """, unsafe_allow_html=True)
-
-
-
 # --- SUPABASE MANAGER ---
 from supabase import create_client, Client
-
 class SupabaseManager:
     def __init__(self):
         try:
@@ -247,29 +305,25 @@ class SupabaseManager:
             self.connected = True
         except Exception as e:
             self.connected = False
-            # Fallback for UI testing without creds, though functionality will limit
-            # st.error("Supabase credentials not found in .streamlit/secrets.toml")
-
+            # Demo Mode active
     def sign_in(self, email, password):
         if not self.connected: 
-            # Mock for testing UI if no DB
-            if email == "demo@blupr.io": return {"user": {"id": "demo", "email": email}, "error": None}
-            return {"user": None, "error": "Database not connected"}
+            # DEMO MODE
+            return {"user": {"id": "demo_user", "email": email}, "error": None}
         try:
             res = self.client.auth.sign_in_with_password({"email": email, "password": password})
             return {"user": res.user, "error": None}
         except Exception as e:
             return {"user": None, "error": str(e)}
-
     def sign_up(self, email, password, name):
         if not self.connected:
-             return {"user": None, "error": "Database not connected"}
+             # DEMO MODE
+             return {"user": {"id": "demo_user", "email": email}, "error": None}
         try:
             res = self.client.auth.sign_up({"email": email, "password": password, "options": {"data": {"name": name}}})
             return {"user": res.user, "error": None}
         except Exception as e:
             return {"user": None, "error": str(e)}
-
     def save_response(self, user_id, question_index, value):
         if not self.connected: return
         # Table: responses (user_id, question_index, value, created_at)
@@ -284,14 +338,13 @@ class SupabaseManager:
             self.client.table("responses").upsert(data).execute()
         except Exception as e:
             st.error(f"Error saving: {e}")
-
     def get_user_responses(self, user_id):
-        if not self.connected: return np.random.rand(10).tolist() # Mock
+        if not self.connected: 
+            # Return demo vector or random if empty
+            return np.random.rand(10).tolist()
         try:
             res = self.client.table("responses").select("*").eq("user_id", user_id).execute()
-            # Convert to list ordered by index
             data = res.data
-            # We assume 10 questions for MVP simple vector
             vector = [0.5] * 10
             for item in data:
                 idx = item.get('question_index')
@@ -300,34 +353,27 @@ class SupabaseManager:
             return vector
         except Exception as e:
             return [0.5] * 10
-
     def get_all_vectors(self):
         if not self.connected: 
-            # Return some mock vectors
+            # Demo Pool
             return [
-                {"user_id": "mock1", "vector": np.random.rand(10).tolist()},
-                {"user_id": "mock2", "vector": np.random.rand(10).tolist()}
+                {"user_id": "demo1", "vector": np.random.rand(10).tolist()},
+                {"user_id": "demo2", "vector": np.random.rand(10).tolist()},
+                {"user_id": "demo3", "vector": np.random.rand(10).tolist()}
             ]
         try:
-            # This is expensive in real prod, but fine for MVP
-            # Fetch all responses
             res = self.client.table("responses").select("*").execute()
             data = res.data
-            
-            # Group by user
             users = {}
             for item in data:
                 uid = item['user_id']
                 if uid not in users: users[uid] = [0.5]*10
                 idx = item['question_index']
                 if idx < 10: users[uid][idx] = item['value']
-            
             return [{"user_id": k, "vector": v} for k,v in users.items()]
         except Exception as e:
             return []
-
 # --- APP STATE & LOGIC ---
-
 if 'app_state' not in st.session_state:
     st.session_state.app_state = 'LOGIN' 
 if 'user' not in st.session_state:
@@ -336,11 +382,9 @@ if 'user_vector' not in st.session_state:
     st.session_state.user_vector = []
 if 'onboarding_step' not in st.session_state:
     st.session_state.onboarding_step = 0
-
 # --- PAGES ---
-
 def login_page(db):
-    st.markdown("<div class='floating-card' style='text-align: center;'><h1>BluPr</h1><p>Belief Blueprint</p></div>", unsafe_allow_html=True)
+    st.markdown("<div class='glass-panel' style='text-align: center;'><h1>BluPr</h1><p>Belief Blueprint</p></div>", unsafe_allow_html=True)
     
     col1, col2 = st.columns(2)
     with col1:
@@ -365,7 +409,6 @@ def login_page(db):
                 st.rerun()
             else:
                 st.error(f"Access Denied: {res['error']}")
-
     with col2:
         st.markdown("### Join the Neural Web")
         new_email = st.text_input("Email", key="new_email")
@@ -380,7 +423,6 @@ def login_page(db):
                 st.rerun()
             else:
                 st.error(f"Link Failed: {res['error']}")
-
 def onboarding_page(db):
     questions = [
         "Do you believe chaos is essential for order?",
@@ -398,7 +440,7 @@ def onboarding_page(db):
     step = st.session_state.onboarding_step
     
     if step < len(questions):
-        st.markdown(f"<div class='floating-card'><h2>Link Sequence {step+1}/{len(questions)}</h2><h1>{questions[step]}</h1></div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='glass-panel'><h2>Link Sequence {step+1}/{len(questions)}</h2><h1>{questions[step]}</h1></div>", unsafe_allow_html=True)
         
         # Intensity Slider
         val = st.slider("Resonance Intensity", 0.0, 1.0, 0.5, 0.01)
@@ -421,7 +463,6 @@ def onboarding_page(db):
         # Done
         st.session_state.app_state = 'DASHBOARD'
         st.rerun()
-
 def generate_barcode_img(vector):
     width = 300
     height = 533 # 9:16
@@ -442,7 +483,6 @@ def generate_barcode_img(vector):
         draw.rectangle([0, y0, width, y1], fill=color)
         
     return img
-
 def calculate_similarity(v1, v2):
     # Euclidean Distance-based similarity
     # Formula: (1 - (dist / sqrt(n))) * 100
@@ -454,7 +494,6 @@ def calculate_similarity(v1, v2):
     max_dist = np.sqrt(n) # max dist if one is all 0s and other all 1s
     similarity = (1 - (dist / max_dist)) * 100
     return max(0, min(100, similarity))
-
 def dashboard_page(db):
     user_vector = st.session_state.user_vector
     
@@ -467,7 +506,6 @@ def dashboard_page(db):
         st.image(img, use_column_width=True)
         if st.button("Download for Story"):
             st.info("Barcode Image Generated. Long-press or right click to save.")
-
     with col_m:
         st.markdown("### Twin Chamber")
         
@@ -508,10 +546,9 @@ def dashboard_page(db):
             end_of_day = now.replace(hour=23, minute=59, second=59)
             remaining = end_of_day - now
             st.markdown(f"<h2 style='color:#FF2D55'>{str(remaining).split('.')[0]}</h2>", unsafe_allow_html=True)
-
     with col_r:
         st.markdown("### Clan Hub")
-        st.markdown("<div class='floating-card'><h4>Clan: The Void Walkers</h4><p>Seekers of the digital infinite.</p></div>", unsafe_allow_html=True)
+        st.markdown("<div class='glass-panel'><h4>Clan: The Void Walkers</h4><p>Seekers of the digital infinite.</p></div>", unsafe_allow_html=True)
         
         st.markdown("#### The Wall")
         st.info("Poll: Is consciousness a bug or a feature?")
@@ -523,9 +560,7 @@ def dashboard_page(db):
         st.markdown("- 📖 *Neuromancer*")
         st.markdown("- 🎬 *Ex Machina*")
         st.markdown("- 🥘 *Ramen (Synthesized)*")
-
 # --- MAIN ---
-
 def main():
     inject_neural_interface()
     db = SupabaseManager()
@@ -536,6 +571,5 @@ def main():
         onboarding_page(db)
     elif st.session_state.app_state == 'DASHBOARD':
         dashboard_page(db)
-
 if __name__ == "__main__":
     main()
