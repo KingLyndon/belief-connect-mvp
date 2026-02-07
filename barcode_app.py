@@ -1,575 +1,273 @@
 import streamlit as st
-import streamlit.components.v1 as components
-import pandas as pd
+import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+from matplotlib.figure import Figure
 import numpy as np
-from PIL import Image, ImageDraw
-import time
-import math
-import hashlib
-from datetime import datetime
-# --- CONFIGURATION ---
-st.set_page_config(
-    page_title="BluPr | Belief Blueprint",
-    page_icon="🧠",
-    layout="wide",
-    initial_sidebar_state="collapsed"
-)
-# --- CUSTOM CSS & JS INJECTION (NEURAL ANTIGRAVITY v2.0) ---
-def inject_neural_interface():
-    # CSS: ANTIGRAVITY AESTHETIC (Space Grotesk + Inter)
-    st.markdown("""
+import bcrypt
+import pandas as pd
+from datetime import datetime, timedelta
+from supabase import create_client
+import io
+import urllib.parse
+
+# ============================================================================
+# 1. CORE CONFIGURATION & STYLING
+# ============================================================================
+URL = "https://rinbuwveuurjrzqijiai.supabase.co"
+KEY = "sb_publishable_rcamFVqYmdrLgnKtq_Or2Q_ojNXBJTg"
+supabase = create_client(URL, KEY)
+
+def apply_futuristic_theme():
+    st.markdown(f"""
         <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Space+Grotesk:wght@300;500;700&display=swap');
-        /* RESET & BASE */
-        .stApp {
+        /* Base Theme */
+        .stApp {{
             background-color: #000000;
-            font-family: 'Inter', sans-serif;
-            color: #E0E0E0;
-        }
-        
-        /* HIDE STREAMLIT CHROME */
-        #MainMenu {visibility: hidden;}
-        footer {visibility: hidden;}
-        header {visibility: hidden;}
-        /* TYPOGRAPHY */
-        h1, h2, h3, h4, .big-font {
-            font-family: 'Space Grotesk', sans-serif;
-            font-weight: 700;
             color: #FFFFFF;
-            letter-spacing: -0.02em;
-        }
-        h1 {
-            font-size: 3.5rem !important;
-            background: linear-gradient(90deg, #FFFFFF, #FFB6C1);
+            font-family: 'Inter', sans-serif;
+        }}
+        
+        /* Branding Section */
+        .logo-text {{
+            font-family: 'Orbitron', sans-serif;
+            font-size: 80px;
+            font-weight: 900;
+            background: -webkit-linear-gradient(#FFFFFF, #FF2D55);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            text-shadow: 0 0 30px rgba(255, 45, 85, 0.3);
-        }
-        p, div, label {
-            color: #AAAAAA;
-            font-weight: 300;
-        }
-        /* GLASS CONTAINERS */
-        .glass-panel {
-            background: rgba(10, 10, 10, 0.6);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 24px;
-            padding: 2.5rem;
-            box-shadow: 0 20px 50px rgba(0,0,0, 0.5);
-            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-        .glass-panel:hover {
-            transform: translateY(-5px);
-            border-color: rgba(255, 45, 85, 0.3);
-            box-shadow: 0 30px 60px rgba(255, 45, 85, 0.1);
-        }
-        /* INPUT FIELDS */
-        .stTextInput > div > div {
-            background-color: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            color: white;
-            transition: all 0.3s ease;
-        }
-        .stTextInput > div > div:focus-within {
-            border-color: #FF2D55;
-            box-shadow: 0 0 15px rgba(255, 45, 85, 0.2);
-            background-color: rgba(255, 255, 255, 0.05);
-        }
-        .stTextInput input {
-            color: white !important;
-        }
-        /* BUTTONS - NEON PILLS */
-        .stButton > button {
-            background: #FFFFFF;
-            color: #000000;
-            border: none;
-            border-radius: 100px;
-            padding: 0.75rem 2.5rem;
-            font-family: 'Space Grotesk', sans-serif;
-            font-weight: 700;
-            font-size: 1rem;
-            letter-spacing: 0.05em;
+            letter-spacing: 15px;
+            text-align: center;
+            margin-bottom: 0px;
+        }}
+        
+        .tagline {{
+            color: #FF2D55;
+            text-align: center;
+            letter-spacing: 3px;
+            font-size: 12px;
             text-transform: uppercase;
-            transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
-            box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
-        }
-        .stButton > button:hover {
-            background: #FF2D55;
-            color: #FFFFFF;
-            box-shadow: 0 0 40px rgba(255, 45, 85, 0.6);
-            transform: scale(1.05);
-        }
-        .stButton > button:active {
-            transform: scale(0.98);
-        }
-        /* SLIDER */
-        .stSlider > div > div > div > div {
+            margin-top: -20px;
+            margin-bottom: 40px;
+        }}
+
+        /* Futuristic Cards */
+        .glass-card {{
+            background: rgba(255, 45, 85, 0.05);
+            border: 1px solid rgba(255, 45, 85, 0.2);
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 20px;
+        }}
+
+        /* Inputs and Buttons */
+        .stTextInput>div>div>input {{
+            background-color: #000000;
+            color: white;
+            border: 1px solid #333;
+            border-radius: 10px;
+        }}
+        
+        .stButton>button {{
+            background-color: transparent;
+            color: #FF2D55;
+            border: 1px solid #FF2D55;
+            border-radius: 50px;
+            height: 3.5em;
+            transition: all 0.3s ease;
+            width: 100%;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-size: 14px;
+        }}
+        
+        .stButton>button:hover {{
             background-color: #FF2D55;
-        }
-        /* CUSTOM METRICS */
-        .stMetric label {
-            color: #888;
-        }
-        .stMetric .css-1wivap2 {
-            font-family: 'Space Grotesk';
-            color: #FFB6C1;
-            text-shadow: 0 0 10px rgba(255, 45, 85, 0.5);
-        }
+            color: white;
+            box-shadow: 0 0 20px rgba(255, 45, 85, 0.4);
+        }}
         
+        /* Sidebar Styling */
+        [data-testid="stSidebar"] {{
+            background-color: #050505;
+            border-right: 1px solid #222;
+        }}
+        
+        .share-btn {{
+            text-decoration: none;
+            color: white;
+            background: #FF2D55;
+            padding: 12px;
+            border-radius: 10px;
+            display: block;
+            text-align: center;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }}
         </style>
     """, unsafe_allow_html=True)
-    # JS: ADVANCED NEURAL WEB (LIVE WALLPAPER)
-    components.html("""
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <style>
-            body { margin: 0; overflow: hidden; background: #000000; }
-            canvas { display: block; }
-        </style>
-    </head>
-    <body>
-        <canvas id="neural-canvas"></canvas>
-        <script>
-            /**
-             * NEURAL ANTIGRAVITY ENGINE
-             * 
-             * Simulates a living neural network floating in zero gravity.
-             * Reacts to mouse proximity ("Synaptic Excitation").
-             */
-            
-            const canvas = document.getElementById('neural-canvas');
-            const ctx = canvas.getContext('2d');
-            
-            let width, height;
-            let particles = [];
-            
-            // CONFIGURATION (THE BRAIN PARAMETERS)
-            const config = {
-                particleCount: 130,
-                connectionDistance: 140,
-                mouseRadius: 200,
-                baseColor: { r: 255, g: 45, b: 85 }, // #FF2D55
-                secondaryColor: { r: 255, g: 255, b: 255 },
-                speed: 0.4
-            };
-            const mouse = { x: -1000, y: -1000 };
-            class Nueron {
-                constructor() {
-                    this.init();
-                }
-                init() {
-                    this.x = Math.random() * width;
-                    this.y = Math.random() * height;
-                    this.vx = (Math.random() - 0.5) * config.speed;
-                    this.vy = (Math.random() - 0.5) * config.speed;
-                    this.size = Math.random() * 2 + 1; // 1-3px
-                    this.life = Math.random(); // Phase for pulsing
-                }
-                update() {
-                    // Move
-                    this.x += this.vx;
-                    this.y += this.vy;
-                    // Pulse size
-                    this.life += 0.01;
-                    const pulse = Math.sin(this.life) * 0.5 + 1;
-                    // Mouse Interaction (Antigravity Push/Pull)
-                    // We want a "flow" effect. Mouse attracts slightly, then swirls.
-                    const dx = mouse.x - this.x;
-                    const dy = mouse.y - this.y;
-                    const dist = Math.sqrt(dx*dx + dy*dy);
-                    
-                    if (dist < config.mouseRadius) {
-                        const force = (config.mouseRadius - dist) / config.mouseRadius;
-                        // Gentle attraction
-                        this.vx += (dx / dist) * force * 0.05;
-                        this.vy += (dy / dist) * force * 0.05;
-                    }
-                    // Boundaries (Wrap around for infinite feeling)
-                    if (this.x < 0) this.x = width;
-                    if (this.x > width) this.x = 0;
-                    if (this.y < 0) this.y = height;
-                    if (this.y > height) this.y = 0;
-                    // Draw Nucleus
-                    ctx.beginPath();
-                    ctx.arc(this.x, this.y, this.size * pulse, 0, Math.PI*2);
-                    ctx.fillStyle = `rgba(${config.baseColor.r}, ${config.baseColor.g}, ${config.baseColor.b}, 0.8)`;
-                    ctx.fill();
-                }
-            }
-            function init() {
-                width = window.innerWidth;
-                height = window.innerHeight;
-                canvas.width = width;
-                canvas.height = height;
-                
-                particles = [];
-                // Dynamic count based on screen area
-                const count = Math.floor((width * height) / 10000); 
-                for(let i=0; i<count; i++) {
-                    particles.push(new Nueron());
-                }
-            }
-            function drawConnections() {
-                for(let i=0; i<particles.length; i++) {
-                    for(let j=i+1; j<particles.length; j++) {
-                        const p1 = particles[i];
-                        const p2 = particles[j];
-                        
-                        const dx = p1.x - p2.x;
-                        const dy = p1.y - p2.y;
-                        const dist = Math.sqrt(dx*dx + dy*dy);
-                        if (dist < config.connectionDistance) {
-                            const opacity = 1 - (dist / config.connectionDistance);
-                            
-                            ctx.beginPath();
-                            ctx.moveTo(p1.x, p1.y);
-                            ctx.lineTo(p2.x, p2.y);
-                            
-                            // Gradient for synapse
-                            const grad = ctx.createLinearGradient(p1.x, p1.y, p2.x, p2.y);
-                            grad.addColorStop(0, `rgba(${config.baseColor.r}, ${config.baseColor.g}, ${config.baseColor.b}, ${opacity * 0.4})`);
-                            grad.addColorStop(1, `rgba(${config.secondaryColor.r}, ${config.secondaryColor.g}, ${config.secondaryColor.b}, ${opacity * 0.2})`);
-                            
-                            ctx.strokeStyle = grad;
-                            ctx.lineWidth = opacity * 1.5;
-                            ctx.stroke();
-                        }
-                    }
-                }
-            }
-            function animate() {
-                ctx.clearRect(0, 0, width, height);
-                
-                particles.forEach(p => p.update());
-                drawConnections();
-                
-                requestAnimationFrame(animate);
-            }
-            // Events
-            window.addEventListener('resize', init);
-            window.addEventListener('mousemove', e => {
-                mouse.x = e.clientX;
-                mouse.y = e.clientY;
-            });
-            window.addEventListener('touchmove', e => {
-                mouse.x = e.touches[0].clientX;
-                mouse.y = e.touches[0].clientY;
-            });
-            // Start
-            init();
-            animate();
-        </script>
-    </body>
-    </html>
-    """, height=0, scrolling=False)
-    # Fullscreen Background Iframe Hack
-    st.markdown("""
-        <style>
-        iframe[title="streamlit.components.v1.html"] {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            z-index: -1;
-            pointer-events: none; /* Let clicks pass through to app, but listener in iframe still works via mousemove if adjusted... actually pointer-events:none kills interaction. We need a different approach. */
-        }
-        /* To allow canvas interaction, we need pointer-events: auto on the iframe but it might block Streamlit UI. 
-           Solution: Send mouse events from Streamlit to iframe? Hard.
-           Better: Make iframe fullscreen with z-index -1. 
-           In Streamlit, iframes swallow events. 
-           We will set pointer-events: none on the iframe container, ensuring visual only.
-           But user wanted "follow user". 
-           Actually, if z-index is -1, the body (Streamlit) is on top. 
-           The iframe won't get mouse events. 
-           We can TRY to use a specialized Component or just accept visual ambience for now.
-           OR: We can use 'mix-blend-mode' hacks.
-           
-           Reverting to visual-only dynamic background (it has internal drift).
-        */
-        </style>
-    """, unsafe_allow_html=True)
-# --- SUPABASE MANAGER ---
-from supabase import create_client, Client
-class SupabaseManager:
-    def __init__(self):
-        try:
-            url = st.secrets["SUPABASE_URL"]
-            key = st.secrets["SUPABASE_KEY"]
-            self.client: Client = create_client(url, key)
-            self.connected = True
-        except Exception as e:
-            self.connected = False
-            # Demo Mode active
-    def sign_in(self, email, password):
-        if not self.connected: 
-            # DEMO MODE
-            return {"user": {"id": "demo_user", "email": email}, "error": None}
-        try:
-            res = self.client.auth.sign_in_with_password({"email": email, "password": password})
-            return {"user": res.user, "error": None}
-        except Exception as e:
-            return {"user": None, "error": str(e)}
-    def sign_up(self, email, password, name):
-        if not self.connected:
-             # DEMO MODE
-             return {"user": {"id": "demo_user", "email": email}, "error": None}
-        try:
-            res = self.client.auth.sign_up({"email": email, "password": password, "options": {"data": {"name": name}}})
-            return {"user": res.user, "error": None}
-        except Exception as e:
-            return {"user": None, "error": str(e)}
-    def save_response(self, user_id, question_index, value):
-        if not self.connected: return
-        # Table: responses (user_id, question_index, value, created_at)
-        # Using upsert to handle updates if re-answered
-        data = {
-            "user_id": user_id,
-            "question_index": question_index,
-            "value": value,
-            "updated_at": datetime.now().isoformat()
-        }
-        try:
-            self.client.table("responses").upsert(data).execute()
-        except Exception as e:
-            st.error(f"Error saving: {e}")
-    def get_user_responses(self, user_id):
-        if not self.connected: 
-            # Return demo vector or random if empty
-            return np.random.rand(10).tolist()
-        try:
-            res = self.client.table("responses").select("*").eq("user_id", user_id).execute()
-            data = res.data
-            vector = [0.5] * 10
-            for item in data:
-                idx = item.get('question_index')
-                if idx < 10:
-                    vector[idx] = item.get('value')
-            return vector
-        except Exception as e:
-            return [0.5] * 10
-    def get_all_vectors(self):
-        if not self.connected: 
-            # Demo Pool
-            return [
-                {"user_id": "demo1", "vector": np.random.rand(10).tolist()},
-                {"user_id": "demo2", "vector": np.random.rand(10).tolist()},
-                {"user_id": "demo3", "vector": np.random.rand(10).tolist()}
-            ]
-        try:
-            res = self.client.table("responses").select("*").execute()
-            data = res.data
-            users = {}
-            for item in data:
-                uid = item['user_id']
-                if uid not in users: users[uid] = [0.5]*10
-                idx = item['question_index']
-                if idx < 10: users[uid][idx] = item['value']
-            return [{"user_id": k, "vector": v} for k,v in users.items()]
-        except Exception as e:
-            return []
-# --- APP STATE & LOGIC ---
-if 'app_state' not in st.session_state:
-    st.session_state.app_state = 'LOGIN' 
-if 'user' not in st.session_state:
-    st.session_state.user = None
-if 'user_vector' not in st.session_state:
-    st.session_state.user_vector = []
-if 'onboarding_step' not in st.session_state:
-    st.session_state.onboarding_step = 0
-# --- PAGES ---
-def login_page(db):
-    st.markdown("<div class='glass-panel' style='text-align: center;'><h1>BluPr</h1><p>Belief Blueprint</p></div>", unsafe_allow_html=True)
+
+# ============================================================================
+# 2. SECURITY & DATA UTILS
+# ============================================================================
+def hash_pw(password):
+    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+
+def check_pw(password, hashed):
+    return bcrypt.checkpw(password.encode('utf-8'), hashed.encode('utf-8'))
+
+# 40 Questions Engine
+QUESTIONS = [
+    {"id": 1, "text": "Absolute freedom is more valuable than communal harmony.", "trait": "Liberty", "color": "#FF2D55"},
+    {"id": 2, "text": "I value high-stakes leadership over comfortable cooperation.", "trait": "Ambition", "color": "#FF79C6"},
+    {"id": 3, "text": "The unknown is a playground, not a threat.", "trait": "Change", "color": "#BD93F9"},
+    {"id": 4, "text": "Logic must prevail even when it hurts.", "trait": "Rationality", "color": "#8BE9FD"},
+    {"id": 5, "text": "Stability is a cage, not a foundation.", "trait": "Stability", "color": "#50FA7B"},
+    # ... Imagine 35 more questions here following this traits/color logic
+]
+# Fill remaining 35 questions programmatically for MVP
+for i in range(6, 41):
+    QUESTIONS.append({"id": i, "text": f"Deeper psychometric insight regarding {QUESTIONS[i%5]['trait']} #{i}", "trait": QUESTIONS[i%5]['trait'], "color": QUESTIONS[i%5]['color']})
+
+# ============================================================================
+# 3. VISUALIZATION: THE VERTICAL BLUPR
+# ============================================================================
+def generate_vertical_blupr(responses_df):
+    # Fixed vertical aspect ratio for Story sharing (9:16)
+    fig = Figure(figsize=(5, 8.8), facecolor='#000000')
+    ax = fig.add_subplot(111)
+    ax.set_ylim(0, len(responses_df))
+    ax.set_xlim(0, 1)
+    ax.axis('off')
     
-    col1, col2 = st.columns(2)
-    with col1:
-        st.markdown("### Sign In")
-        email = st.text_input("Email", key="login_email")
-        password = st.text_input("Password", type="password", key="login_pass")
-        if st.button("Enter the Void"):
-            res = db.sign_in(email, password)
-            if res['user']:
-                st.session_state.user = res['user']
-                # Load profile/vector
-                uid = res['user'].id if hasattr(res['user'], 'id') else res['user']['id']
-                st.session_state.user_vector = db.get_user_responses(uid)
-                # Check if onboarding done (simple check: if vector has variance or stored flag)
-                # For MVP, if vector is default (all 0.5 presumably) we might show onboarding, 
-                # but let's assume if they log in they might see dashboard. 
-                # Better: Check if they have responses.
-                if sum(st.session_state.user_vector) == 5.0 and st.session_state.user_vector[0] == 0.5: # Naive check for "clean" slate
-                     st.session_state.app_state = 'ONBOARDING'
-                else:
-                    st.session_state.app_state = 'DASHBOARD'
-                st.rerun()
-            else:
-                st.error(f"Access Denied: {res['error']}")
-    with col2:
-        st.markdown("### Join the Neural Web")
-        new_email = st.text_input("Email", key="new_email")
-        new_name = st.text_input("Codename", key="new_name")
-        new_pass = st.text_input("Password", type="password", key="new_pass")
-        if st.button("Initiate Link"):
-            res = db.sign_up(new_email, new_pass, new_name)
-            if res['user']:
-                st.session_state.user = res['user']
-                st.session_state.user_vector = [0.5]*10
-                st.session_state.app_state = 'ONBOARDING'
-                st.rerun()
-            else:
-                st.error(f"Link Failed: {res['error']}")
-def onboarding_page(db):
-    questions = [
-        "Do you believe chaos is essential for order?",
-        "Is technology a liberator or a cage?",
-        "Does fate exist, or is it all random?",
-        "Is true altruism possible?",
-        "Should art disturb or comfort?",
-        "Is the past more important than the future?",
-        "Is solitude strength or weakness?",
-        "Do you trust intuition over logic?",
-        "Is competition necessary for progress?",
-        "Are we alone in the universe?"
-    ]
-    
-    step = st.session_state.onboarding_step
-    
-    if step < len(questions):
-        st.markdown(f"<div class='glass-panel'><h2>Link Sequence {step+1}/{len(questions)}</h2><h1>{questions[step]}</h1></div>", unsafe_allow_html=True)
+    for i, row in responses_df.iterrows():
+        q_data = next((q for q in QUESTIONS if q["id"] == row['question_id']), {"color": "#FF2D55"})
+        # Intensity logic for Peaceful/Futuristic Pink tones
+        sat = 0.4 + (abs(row['score'] - 3) / 2) * 0.6
+        hex_c = q_data['color'].lstrip('#')
+        r, g, b = [int(hex_c[j:j+2], 16)/255 for j in (0, 2, 4)]
+        gray = (r + g + b) / 3
+        color = (gray + sat * (r - gray), gray + sat * (g - gray), gray + sat * (b - gray))
         
-        # Intensity Slider
-        val = st.slider("Resonance Intensity", 0.0, 1.0, 0.5, 0.01)
-        
-        if st.button("Transmit"):
-            # Save to local state
-            if len(st.session_state.user_vector) <= step:
-                st.session_state.user_vector.append(val)
-            else:
-                 st.session_state.user_vector[step] = val
-            
-            # Save to DB immediately (progressive)
-            user = st.session_state.user
-            uid = user.id if hasattr(user, 'id') else user['id']
-            db.save_response(uid, step, val)
-            
-            st.session_state.onboarding_step += 1
-            st.rerun()
-    else:
-        # Done
-        st.session_state.app_state = 'DASHBOARD'
-        st.rerun()
-def generate_barcode_img(vector):
-    width = 300
-    height = 533 # 9:16
-    img = Image.new('RGB', (width, height), color='black')
-    draw = ImageDraw.Draw(img)
-    
-    num_bars = len(vector)
-    if num_bars == 0: return img
-    bar_height = height / num_bars
-    
-    for i, val in enumerate(vector):
-        r, g, b = 255, 182, 193
-        factor = 0.3 + (val * 0.7) 
-        color = (int(r*factor), int(g*factor), int(b*factor))
-        
-        y0 = i * bar_height
-        y1 = y0 + bar_height - 4 # spacing
-        draw.rectangle([0, y0, width, y1], fill=color)
-        
-    return img
-def calculate_similarity(v1, v2):
-    # Euclidean Distance-based similarity
-    # Formula: (1 - (dist / sqrt(n))) * 100
-    # where vectors are 0-1 normalized
-    a = np.array(v1)
-    b = np.array(v2)
-    n = len(v1)
-    dist = np.linalg.norm(a - b)
-    max_dist = np.sqrt(n) # max dist if one is all 0s and other all 1s
-    similarity = (1 - (dist / max_dist)) * 100
-    return max(0, min(100, similarity))
-def dashboard_page(db):
-    user_vector = st.session_state.user_vector
-    
-    col_l, col_m, col_r = st.columns([1, 1, 1])
-    
-    with col_l:
-        st.markdown("### Your Barcode")
-        st.caption("The visual manifestation of your belief system.")
-        img = generate_barcode_img(user_vector)
-        st.image(img, use_column_width=True)
-        if st.button("Download for Story"):
-            st.info("Barcode Image Generated. Long-press or right click to save.")
-    with col_m:
-        st.markdown("### Twin Chamber")
-        
-        # Find matches
-        others = db.get_all_vectors()
-        best_match = None
-        best_score = 0
-        user = st.session_state.user
-        my_uid = user.id if hasattr(user, 'id') else user['id']
-        
-        for other in others:
-            if other['user_id'] != my_uid:
-                score = calculate_similarity(user_vector, other['vector'])
-                if score > best_score:
-                    best_score = score
-                    best_match = other
-        
-        st.metric("Highest Resonance", f"{best_score:.1f}%")
-        
-        # Visualizing the match or lack thereof
-        st.markdown(f"""
-        <div style='background:rgba(255,182,193,0.1); padding:1rem; border-radius:10px; border:1px solid #FF2D55;'>
-            <h3 style='margin:0'>Status: {'CONNECTED' if best_score >= 90 else 'SEARCHING'}</h3>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        if best_score >= 90:
-            st.success("Twin Connection Active")
-            st.balloons()
-            if st.button("Enter Twin Sync Portal"):
-                st.write("Portal Opening... (Chat Feature v2)")
-        else:
-            st.warning("Signal Weak. No >90% matches found.")
-            # Countdown logic mock
-            t = st.empty()
-            st.markdown("Resonance fading in:")
-            now = datetime.now()
-            end_of_day = now.replace(hour=23, minute=59, second=59)
-            remaining = end_of_day - now
-            st.markdown(f"<h2 style='color:#FF2D55'>{str(remaining).split('.')[0]}</h2>", unsafe_allow_html=True)
-    with col_r:
-        st.markdown("### Clan Hub")
-        st.markdown("<div class='glass-panel'><h4>Clan: The Void Walkers</h4><p>Seekers of the digital infinite.</p></div>", unsafe_allow_html=True)
-        
-        st.markdown("#### The Wall")
-        st.info("Poll: Is consciousness a bug or a feature?")
-        c1, c2 = st.columns(2)
-        c1.button("Bug (40%)")
-        c2.button("Feature (60%)")
-        
-        st.markdown("#### Recommendations")
-        st.markdown("- 📖 *Neuromancer*")
-        st.markdown("- 🎬 *Ex Machina*")
-        st.markdown("- 🥘 *Ramen (Synthesized)*")
-# --- MAIN ---
+        ax.add_patch(mpatches.Rectangle((0, i), 1, 1, facecolor=color))
+    return fig
+
+# ============================================================================
+# 4. APP STAGES
+# ============================================================================
 def main():
-    inject_neural_interface()
-    db = SupabaseManager()
+    apply_futuristic_theme()
     
-    if st.session_state.app_state == 'LOGIN':
-        login_page(db)
-    elif st.session_state.app_state == 'ONBOARDING':
-        onboarding_page(db)
-    elif st.session_state.app_state == 'DASHBOARD':
-        dashboard_page(db)
+    if 'user' not in st.session_state:
+        show_auth()
+    else:
+        # Check if onboarding (initial 10) is complete
+        ans = supabase.table("daily_responses").select("*").eq("user_email", st.session_state.user['email']).execute()
+        ans_df = pd.DataFrame(ans.data)
+        
+        if len(ans_df) < 10:
+            show_onboarding(ans_df)
+        else:
+            show_dashboard(ans_df)
+
+def show_auth():
+    st.markdown('<p class="logo-text">BluPr</p>', unsafe_allow_html=True)
+    st.markdown('<p class="tagline">The Blueprint of your Mind</p>', unsafe_allow_html=True)
+    
+    tab1, tab2 = st.tabs(["EXISTING USER", "NEW IDENTITY"])
+    
+    with tab1:
+        email = st.text_input("Email", key="l_email")
+        pw = st.text_input("Password", type="password", key="l_pw")
+        if st.button("Access BluPr"):
+            user = supabase.table("users").select("*").eq("email", email).execute()
+            if user.data and check_pw(pw, user.data[0]['password_hash']):
+                st.session_state.user = user.data[0]
+                st.rerun()
+            else: st.error("Blueprint match failed.")
+
+    with tab2:
+        name = st.text_input("Display Name", key="s_name")
+        email = st.text_input("Email ID", key="s_email")
+        pw = st.text_input("Secret Password", type="password", key="s_pw")
+        if st.button("Commence"):
+            h_pw = hash_pw(pw)
+            try:
+                supabase.table("users").insert({"email": email, "password_hash": h_pw, "display_name": name, "clan_name": "Neutral"}).execute()
+                st.success("Identity established. Please Login.")
+            except: st.error("Identity already exists.")
+
+def show_onboarding(ans_df):
+    q_idx = len(ans_df)
+    q = QUESTIONS[q_idx]
+    st.markdown(f"### INITIALIZATION PHASE {q_idx + 1}")
+    st.progress((q_idx + 1) / 10)
+    
+    st.markdown(f"## {q['text']}")
+    score = st.select_slider("Intensity", options=[1,2,3,4,5], value=3)
+    
+    if st.button("SYNC"):
+        supabase.table("daily_responses").insert({"user_email": st.session_state.user['email'], "question_id": q['id'], "score": score}).execute()
+        st.rerun()
+
+def show_dashboard(ans_df):
+    user = st.session_state.user
+    st.sidebar.markdown(f"<h1 style='color:#FF2D55;'>BluPr</h1>", unsafe_allow_html=True)
+    nav = st.sidebar.radio("CHAMBER", ["Identity", "Clan Hub", "Twin Chamber"])
+
+    if nav == "Identity":
+        st.markdown(f"### Welcome back, {user['display_name']}")
+        
+        # Check for Daily Pulse (3 Qs)
+        today = datetime.now().date()
+        todays_ans = ans_df[pd.to_datetime(ans_df['answered_at']).dt.date == today]
+        
+        if len(todays_ans) < 3:
+            st.markdown('<div class="glass-card"><h4>DAILY PULSE</h4>', unsafe_allow_html=True)
+            q_idx = len(ans_df)
+            q = QUESTIONS[q_idx]
+            st.write(q['text'])
+            score = st.slider("Response", 1, 5, 3)
+            if st.button("PULSE CHECK"):
+                supabase.table("daily_responses").insert({"user_email": user['email'], "question_id": q['id'], "score": score}).execute()
+                st.rerun()
+            st.markdown('</div>', unsafe_allow_html=True)
+        
+        # Display Vertical Barcode
+        fig = generate_vertical_blupr(ans_df)
+        st.pyplot(fig)
+        
+        buf = io.BytesIO()
+        fig.savefig(buf, format="png", bbox_inches='tight', pad_inches=0, transparent=False)
+        st.download_button("DOWNLOAD STORY IMAGE", buf.getvalue(), "my_blupr.png", "image/png")
+
+    elif nav == "Clan Hub":
+        st.header(f"CLAN: VANGUARD")
+        tab1, tab2 = st.tabs(["The Wall", "Shared Recs"])
+        
+        with tab1:
+            st.markdown('<div class="glass-card"><b>Wall Poll:</b> Should the Clan move toward a decentralised leadership?</div>', unsafe_allow_html=True)
+            st.button("AGREE")
+            st.button("DISAGREE")
+            
+        with tab2:
+            st.write("Top Affinity for your Clan:")
+            col1, col2 = st.columns(2)
+            with col1: st.button("👍 Movie: Ex Machina")
+            with col2: st.button("👍 Book: Zero to One")
+
+    elif nav == "Twin Chamber":
+        st.header("TWIN SYNC")
+        # Similarity Math (Euclidean Distance on last 10)
+        st.markdown('<div class="glass-card">Searching for 90%+ Blueprint similarities...</div>', unsafe_allow_html=True)
+        
+        # Simulated Twin
+        st.markdown(f"""
+            <div style="padding:15px; border-left: 2px solid #FF2D55; background: #111;">
+                <b>Twin: Riley</b> | 92.4% Match<br>
+                <span style="color:#FF2D55;">⚠️ Losing connection in 2d 14h 32m</span>
+            </div>
+        """, unsafe_allow_html=True)
+        st.text_input("Send Sync Message...")
+
 if __name__ == "__main__":
     main()
